@@ -1,11 +1,9 @@
-//const objection = require('../../lib/objection');
-const objection = require('objection');
-const Model = objection.Model;
-const Knex = require('knex');
-const metadata = require('./models');
-const fs = require('fs');
+// This one can be run in standalone
 
-//var sql = fs.readFileSync(__dirname + '/test.sql','utf-8');
+const objection = require('objection');
+const Base = objection.Model;
+const Knex = require('knex');
+const fs = require('fs');
 
 async function test(){
     try{
@@ -16,9 +14,9 @@ async function test(){
         
         knex = require('knex')({ client: 'pg', connection: {database: "bug"}});
         await knex.raw(sql);
-        Model.knex(knex);
+        Base.knex(knex);
 
-        var bsa = await metadata.BusinessDocument.query().eager("UsagePoint").where({usagepoint_id:null});
+        var bsa = await BusinessDocument.query().eager("UsagePoint").where({usagepoint_id:null});
         var data =  {
             id:bsa[0].id,
             UsagePoint:{
@@ -28,7 +26,7 @@ async function test(){
             }
             
         };
-        var output = await metadata.BusinessDocument.query().upsertGraph(
+        var output = await BusinessDocument.query().upsertGraph(
             data,{relate:true, insertMissing:true}).debug();
         console.log(`Address exists in objection output but without id: ${JSON.stringify(output.UsagePoint.Meter[0],null, 2)}`);
         console.log(`There is no meter in database: ${await knex("meter")}`)
@@ -38,6 +36,85 @@ async function test(){
 }
 test();
 
+class Address extends Base {
+    static get tableName() {
+        return 'address';
+    }
+    static get relationMappings() {
+        return {
+        }
+    }  
+}
+
+class BusinessDocument extends Base {
+    static get tableName() {
+      return 'business_document';
+    }
+    static get relationMappings() {
+      return {
+        UsagePoint: {
+          relation: Base.BelongsToOneRelation,
+          modelClass: UsagePoint,
+          join: {
+            from: "business_document.usagepoint_id",
+            to:"usagepoint.id"
+          }         
+        }                                          
+      }
+   }
+  }
+
+  class Meter extends Base {
+    static get tableName() {
+      return 'meter';
+    }
+    static get relationMappings() {
+      return {
+        UsagePoint:{
+          relation: Base.BelongsToOneRelation,
+          modelClass: UsagePoint,
+          join: {
+            from: 'meter.usagepoint_id',
+            to: 'usagepoint.id'
+          }
+        }
+      }
+    }    
+  }
+
+  class UsagePoint extends Base {
+    static get tableName() {
+        return 'usagepoint';
+    }
+    static get relationMappings() {
+        return {                  
+            Address:{
+                relation: Base.BelongsToOneRelation,
+                modelClass: Address,
+                join: {
+                    from: 'usagepoint.address',
+                    to: 'address.id'
+                }                
+            },
+            BusinessDocument:{
+                relation: Base.HasManyRelation,
+                modelClass: BusinessDocument,
+                join: {
+                    from: 'usagepoint.id',
+                    to: 'business_document.usagepoint_id'
+                }                
+            },
+            Meter:{
+                relation: Base.HasManyRelation,
+                modelClass: Meter,
+                join:{
+                    from: 'usagepoint.id',
+                    to: 'meter.usagepoint_id'
+                }
+            }                                                   
+        }
+    }    
+}  
 var sql = `
 create extension if not exists "uuid-ossp";
 

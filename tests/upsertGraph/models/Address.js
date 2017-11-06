@@ -1,4 +1,4 @@
-const Base = require('./BaseModel');
+const Base = require('../../../lib/objection').Model;
 
 class Address extends Base {
   static get tableName() {

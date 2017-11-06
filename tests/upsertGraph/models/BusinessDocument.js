@@ -1,15 +1,13 @@
-const BaseModel = require('./BaseModel');
-const fs = require('fs');
-const _ = require('lodash');
+const Base = require('../../../lib/objection').Model;
 
-class BusinessDocument extends BaseModel {
+class BusinessDocument extends Base {
   static get tableName() {
     return 'business_document';
   }
   static get relationMappings() {
     return {
       UsagePoint: {
-        relation: BaseModel.BelongsToOneRelation,
+        relation: Base.BelongsToOneRelation,
         modelClass: __dirname + "/UsagePoint",
         join: {
           from: "business_document.usagepoint_id",
