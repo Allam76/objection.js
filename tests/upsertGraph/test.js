@@ -7,7 +7,7 @@ const knex = Knex({
   client: 'pg',
   connection: {
     database: 'test',
-    password: 'password',
+    password: 'Aeris001',
     user: 'martin'
   }
 });
